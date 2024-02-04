@@ -28,7 +28,7 @@ const observer = new IntersectionObserver(
       }
     });
   },
-  { rootMargin: '150px' }
+  { rootMargin: '250px' }
 );
 
 const perPage = 40;
