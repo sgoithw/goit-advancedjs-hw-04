@@ -22,7 +22,7 @@ const lightbox = new simpleLightbox('.photo-card', {
 
 const observer = new IntersectionObserver(
   (entries, observer) => {
-    entries.forEach(async entry => {
+    entries.forEach(entry => {
       if (entry.isIntersecting) {
         handleOsbserverIntersect(observer);
       }
@@ -30,6 +30,8 @@ const observer = new IntersectionObserver(
   },
   { rootMargin: '150px' }
 );
+
+const perPage = 40;
 
 let currentPage = 1;
 
@@ -41,39 +43,15 @@ elements.searchForm.addEventListener('submit', handleSearchFormSubmit);
  */
 async function handleSearchFormSubmit(event) {
   event.preventDefault();
-  clearGallery();
-  const result = await renderGallery(1);
-  observer.observe(elements.galleryEnd);
-}
-
-/**
- * Handles the observer intersect event.
- * Loads more images if the observer intersects.
- * @param {*} observer
- */
-async function handleOsbserverIntersect(observer) {
-  const res = await renderGallery(++currentPage);
-  if (res.totalHits <= 40 || res.totalHits <= currentPage * 40) {
-    observer.unobserve(elements.galleryEnd);
-  }
-}
-
-/**
- * Loads the images and renders the gallery.
- * @param {*} page
- */
-async function renderGallery(page = 1) {
   try {
-    currentPage = page;
-    const { data: response } = await searchImages(getQuery(page));
-    if (response.totalHits !== 0) {
+    clearGallery();
+    const result = await renderGallery();
+    if (result.totalHits !== 0) {
       iziToast.success({
         title: 'Success',
         position: 'topRight',
-        message: `Hooray! We found ${response.totalHits} images.`,
+        message: `Hooray! We found ${result.totalHits} images.`,
       });
-      renderImages(response.hits);
-      refreshSimpleLightbox();
     } else {
       iziToast.info({
         title: 'Info',
@@ -82,15 +60,47 @@ async function renderGallery(page = 1) {
           'Sorry, there are no images matching your search query. Please try again.',
       });
     }
-    return response;
+    if (result.totalHits > perPage) {
+      observer.observe(elements.galleryEnd);
+    }
   } catch (error) {
-    console.log(error);
-    iziToast.error({
-      title: 'Error',
-      position: 'topRight',
-      message: error.message,
-    });
+    showErrorMessage(error);
   }
+}
+
+/**
+ * Handles the observer intersect event.
+ * Loads more images if the observer intersects.
+ * @param {*} observer
+ */
+async function handleOsbserverIntersect(observer) {
+  try {
+    const res = await renderGallery(++currentPage);
+    if (res.totalHits <= currentPage * perPage) {
+      observer.unobserve(elements.galleryEnd);
+      iziToast.info({
+        title: 'Info',
+        position: 'topRight',
+        message: "We're sorry, but you've reached the end of search results.",
+      });
+    }
+  } catch (error) {
+    showErrorMessage(error);
+  }
+}
+
+/**
+ * Loads the images and renders the gallery.
+ * @param {*} page
+ */
+async function renderGallery(page = 1) {
+  currentPage = page;
+  const { data: response } = await searchImages(getQuery(page));
+  if (response.hits.length > 0) {
+    renderImages(response.hits);
+    refreshSimpleLightbox();
+  }
+  return response;
 }
 
 /**
@@ -118,6 +128,7 @@ function renderImages(images) {
  * */
 function clearGallery() {
   elements.gallery.innerHTML = '';
+  observer.unobserve(elements.galleryEnd);
 }
 
 /**
@@ -129,8 +140,21 @@ function getQuery(page = 1) {
   return {
     query: elements.searchForm.elements.searchQuery.value,
     page,
-    per_page: 40,
+    per_page: perPage,
   };
+}
+
+/**
+ * Displays an error message.
+ * @param {*} error
+ */
+function showErrorMessage(error) {
+  console.log(error);
+  iziToast.error({
+    title: 'Error',
+    position: 'topRight',
+    message: error.message,
+  });
 }
 
 /**

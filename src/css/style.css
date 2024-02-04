@@ -20,6 +20,10 @@
   clip: rect(0 0 0 0);
   overflow: hidden;
 }
+#section-search {
+  position: sticky;
+  top: 0;
+}
 .search-form-query {
 }
 .search-form-submit {
