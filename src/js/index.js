@@ -62,7 +62,7 @@ async function handleSearchFormSubmit(event) {
     }
     if (result.totalHits > perPage) {
       observer.observe(elements.galleryEnd);
-    } else {
+    } else if (result.totalHits >= 1) {
       iziToast.info({
         title: 'Info',
         position: 'topRight',
