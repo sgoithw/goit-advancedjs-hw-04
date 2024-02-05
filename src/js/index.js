@@ -62,6 +62,12 @@ async function handleSearchFormSubmit(event) {
     }
     if (result.totalHits > perPage) {
       observer.observe(elements.galleryEnd);
+    } else {
+      iziToast.info({
+        title: 'Info',
+        position: 'topRight',
+        message: "You've reached the end of search results.",
+      });
     }
   } catch (error) {
     showErrorMessage(error);
@@ -95,12 +101,24 @@ async function handleOsbserverIntersect(observer) {
  */
 async function renderGallery(page = 1) {
   currentPage = page;
-  const { data: response } = await searchImages(getQuery(page));
+  const query = getQuery(page);
+  checkQuery(query);
+  const { data: response } = await searchImages(query);
   if (response.hits.length > 0) {
     renderImages(response.hits);
     refreshSimpleLightbox();
   }
   return response;
+}
+
+/**
+ * Checks the query.
+ * @param {*} query
+ */
+function checkQuery(query) {
+  if (!query.query || query.query.length === 0) {
+    throw new Error('Quey is empty. Please enter a search query');
+  }
 }
 
 /**
@@ -138,7 +156,7 @@ function clearGallery() {
  */
 function getQuery(page = 1) {
   return {
-    query: elements.searchForm.elements.searchQuery.value,
+    query: elements.searchForm.elements.searchQuery.value.trim(),
     page,
     per_page: perPage,
   };
